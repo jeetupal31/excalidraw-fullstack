@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 
 const app = express();
 
@@ -19,12 +19,27 @@ const server = app.listen(PORT, () => {
 
 const wss = new WebSocketServer({ server });
 
-wss.on("connection", (socket) => {
+let clients: WebSocket[] = [];
+
+wss.on("connection", (socket:WebSocket) => {
   console.log("New WebSocket connection");
 
+  clients.push(socket);
+
   socket.on("message", (message) => {
-    console.log("Received:", message.toString());
+    const data =  message.toString();
+
+    console.log("Received drawing data");
+
+    // Broadcast to all other clients
+    clients.forEach((client) => {
+      if(client !== socket && client.readyState === WebSocket.OPEN) {
+      client.send(data);
+      }
+    })
   });
 
-  socket.send("Connected to WebSocket server");
+  socket.on("close", () => {
+    clients = clients.filter((clients) => clients !== socket);
+  });
 });
