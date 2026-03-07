@@ -5,19 +5,22 @@ import {
 } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import type {
   ExcalidrawImperativeAPI,
   OrderedExcalidrawElement,
 } from "@excalidraw/excalidraw/types";
-
-const roomId = "room1";
-const WS_URL = `ws://localhost:3000?room=${roomId}`;
 
 function randomColor() {
   return `hsl(${Math.random() * 360},70%,50%)`;
 }
 
 function App() {
+  const params = useParams();
+  const roomId = params.roomId || "default";
+
+  const WS_URL = `ws://localhost:3000?room=${roomId}`;
+
   const wsRef = useRef<WebSocket | null>(null);
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
@@ -86,7 +89,7 @@ function App() {
     wsRef.current = socket;
 
     socket.onopen = () => {
-      console.log("WS connected");
+      console.log("WS connected to room:", roomId);
     };
 
     socket.onmessage = (event) => {
@@ -113,7 +116,7 @@ function App() {
     };
 
     return () => socket.close();
-  }, [applyRemoteElements]);
+  }, [applyRemoteElements, roomId]);
 
   const handleChange = useCallback(
     (elements: readonly OrderedExcalidrawElement[]) => {
