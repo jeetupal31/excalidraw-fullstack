@@ -1,0 +1,13 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Board {
+  id        String   @id
+  elements  Json
+  updatedAt DateTime @updatedAt
+}
