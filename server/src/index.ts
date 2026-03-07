@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 
 const app = express();
 app.use(cors());
@@ -9,25 +9,39 @@ app.use(cors());
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-let clients: any[] = [];
+const rooms = new Map<string, Set<WebSocket>>();
 
-wss.on("connection", (socket) => {
-  console.log("New client connected");
+wss.on("connection", (socket, request) => {
+  const url = new URL(request.url ?? "", "http://localhost");
+  const roomId = url.searchParams.get("room") || "default";
 
-  clients.push(socket);
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, new Set());
+  }
+
+  const room = rooms.get(roomId)!;
+  room.add(socket);
+
+  console.log(`Client joined room: ${roomId}`);
 
   socket.on("message", (msg) => {
-    const data = msg.toString();
+    const message = msg.toString();
 
-    clients.forEach((client) => {
-      if (client !== socket && client.readyState === 1) {
-        client.send(data);
+    room.forEach((client) => {
+      if (client !== socket && client.readyState === WebSocket.OPEN) {
+        client.send(message);
       }
     });
   });
 
   socket.on("close", () => {
-    clients = clients.filter((c) => c !== socket);
+    room.delete(socket);
+
+    if (room.size === 0) {
+      rooms.delete(roomId);
+    }
+
+    console.log(`Client left room: ${roomId}`);
   });
 });
 
