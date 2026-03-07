@@ -4,8 +4,11 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "esModuleInterop": true,
+    "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "skipLibCheck": true,
     "types": ["node"]
-  }
+  },
+  "include": ["src/**/*.ts"]
 }

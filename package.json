@@ -1,0 +1,16 @@
+{
+  "name": "realtime-collaborative-whiteboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade realtime collaborative whiteboard using React, Excalidraw, Node.js, WebSocket, and PostgreSQL.",
+  "scripts": {
+    "postinstall": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "start": "npm run start --prefix server",
+    "lint": "npm run lint --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

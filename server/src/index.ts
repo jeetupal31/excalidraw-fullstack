@@ -1,113 +1,55 @@
 import "dotenv/config";
-import express from "express";
 import cors from "cors";
+import express from "express";
 import { createServer } from "http";
-import { WebSocketServer, WebSocket } from "ws";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { WebSocketServer } from "ws";
+import { healthController } from "./controllers/healthController";
+import { RoomManager } from "./rooms/RoomManager";
+import { DatabaseService } from "./services/DatabaseService";
+import { WebSocketHandler } from "./websocket/WebSocketHandler";
 
-const prisma = new PrismaClient();
+const port = Number(process.env.PORT ?? 3000);
 
 const app = express();
 app.use(cors());
+app.get("/health", healthController);
 
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-const rooms = new Map<string, Set<WebSocket>>();
-const roomUsers = new Map<string, Map<string, string>>();
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("Missing DATABASE_URL. Add it to server/.env before starting the server.");
+}
 
-wss.on("connection", async (socket, request) => {
-  const url = new URL(request.url ?? "", "http://localhost");
-  const roomId = url.searchParams.get("room") || "default";
+const adapter = new PrismaPg({ connectionString: databaseUrl });
+const prisma = new PrismaClient({ adapter });
+const databaseService = new DatabaseService(prisma);
+const roomManager = new RoomManager();
+const webSocketHandler = new WebSocketHandler(roomManager, databaseService);
 
-  if (!rooms.has(roomId)) rooms.set(roomId, new Set());
-  if (!roomUsers.has(roomId)) roomUsers.set(roomId, new Map());
-
-  const room = rooms.get(roomId)!;
-  const users = roomUsers.get(roomId)!;
-
-  room.add(socket);
-
-  console.log(`Client joined room: ${roomId}`);
-
-  const board = await prisma.board.findUnique({
-    where: { id: roomId },
-  });
-
-  if (board) {
-    socket.send(
-      JSON.stringify({
-        type: "scene-update",
-        elements: board.elements,
-      })
-    );
-  }
-
-  socket.on("message", async (msg) => {
-    const message = msg.toString();
-
-    let payload: any;
-
-    try {
-      payload = JSON.parse(message);
-    } catch {
-      return;
-    }
-
-    if (payload.type === "join") {
-      users.set(payload.clientId, payload.username);
-
-      room.forEach((client) => {
-        client.send(
-          JSON.stringify({
-            type: "users",
-            users: Object.fromEntries(users),
-          })
-        );
-      });
-    }
-
-    if (payload.type === "scene-update") {
-      await prisma.board.upsert({
-        where: { id: roomId },
-        update: {
-          elements: payload.elements,
-        },
-        create: {
-          id: roomId,
-          elements: payload.elements,
-        },
-      });
-    }
-
-    room.forEach((client) => {
-      if (client !== socket && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
-  });
-
-  socket.on("close", () => {
-    room.delete(socket);
-
-    room.forEach((client) => {
-      client.send(
-        JSON.stringify({
-          type: "users",
-          users: Object.fromEntries(users),
-        })
-      );
-    });
-
-    if (room.size === 0) {
-      rooms.delete(roomId);
-      roomUsers.delete(roomId);
-    }
-
-    console.log(`Client left room: ${roomId}`);
-  });
+wss.on("connection", (socket, request) => {
+  void webSocketHandler.handleConnection(socket, request);
 });
 
-server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+server.listen(port, () => {
+  console.log(`Collaboration server listening on http://localhost:${port}`);
+});
+
+const shutdown = async (): Promise<void> => {
+  console.log("Shutting down server...");
+
+  wss.close();
+  server.close();
+  await databaseService.disconnect();
+};
+
+process.on("SIGINT", () => {
+  void shutdown().finally(() => process.exit(0));
+});
+
+process.on("SIGTERM", () => {
+  void shutdown().finally(() => process.exit(0));
 });
