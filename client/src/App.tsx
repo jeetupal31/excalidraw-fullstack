@@ -28,6 +28,7 @@ function App() {
   const username = useRef(`User-${Math.floor(Math.random() * 1000)}`);
   const color = useRef(randomColor());
 
+  const [users, setUsers] = useState<Record<string, string>>({});
   const [remoteCursors, setRemoteCursors] = useState<
     Record<string, { x: number; y: number; name: string; color: string }>
   >({});
@@ -89,7 +90,13 @@ function App() {
     wsRef.current = socket;
 
     socket.onopen = () => {
-      console.log("WS connected to room:", roomId);
+      socket.send(
+        JSON.stringify({
+          type: "join",
+          clientId: clientId.current,
+          username: username.current,
+        })
+      );
     };
 
     socket.onmessage = (event) => {
@@ -112,6 +119,10 @@ function App() {
           delete copy[payload.clientId];
           return copy;
         });
+      }
+
+      if (payload.type === "users") {
+        setUsers(payload.users);
       }
     };
 
@@ -212,6 +223,23 @@ function App() {
           </div>
         </div>
       ))}
+
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          background: "white",
+          padding: 10,
+          borderRadius: 8,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+        }}
+      >
+        <b>Users</b>
+        {Object.values(users).map((name) => (
+          <div key={name}>🟢 {name}</div>
+        ))}
+      </div>
     </div>
   );
 }
