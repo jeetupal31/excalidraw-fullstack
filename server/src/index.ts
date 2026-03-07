@@ -1,45 +1,36 @@
 import express from "express";
 import cors from "cors";
-import { WebSocketServer, WebSocket } from "ws";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
 const app = express();
-
 app.use(cors());
-app.use(express.json());
 
-const PORT = 3000;
-
-app.get("/", (req, res) => {
-  res.send("Excalidraw backend running");
-});
-
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
+const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-let clients: WebSocket[] = [];
+let clients: any[] = [];
 
-wss.on("connection", (socket:WebSocket) => {
-  console.log("New WebSocket connection");
+wss.on("connection", (socket) => {
+  console.log("New client connected");
 
   clients.push(socket);
 
-  socket.on("message", (message) => {
-    const data =  message.toString();
+  socket.on("message", (msg) => {
+    const data = msg.toString();
 
-    console.log("Received drawing data");
-
-    // Broadcast to all other clients
     clients.forEach((client) => {
-      if(client !== socket && client.readyState === WebSocket.OPEN) {
-      client.send(data);
+      if (client !== socket && client.readyState === 1) {
+        client.send(data);
       }
-    })
+    });
   });
 
   socket.on("close", () => {
-    clients = clients.filter((clients) => clients !== socket);
+    clients = clients.filter((c) => c !== socket);
   });
+});
+
+server.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
 });
