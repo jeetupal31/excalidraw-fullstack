@@ -44,7 +44,16 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const lastSentSceneVersionRef = useRef(0);
 
   const socketUrl = useMemo(() => {
-    const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL ?? DEFAULT_WS_BASE_URL;
+    let wsBaseUrl = import.meta.env.VITE_WS_BASE_URL ?? DEFAULT_WS_BASE_URL;
+
+    // Auto-fix protocol for production HTTPS
+    if (window.location.protocol === "https:" && wsBaseUrl.startsWith("ws://")) {
+      // Only swap if it's not localhost, or if we want to force wss for remote hosts
+      if (!wsBaseUrl.includes("localhost")) {
+        wsBaseUrl = wsBaseUrl.replace("ws://", "wss://");
+      }
+    }
+
     let url = `${wsBaseUrl}?room=${encodeURIComponent(roomId)}`;
     if (token) {
       url += `&token=${encodeURIComponent(token)}`;
