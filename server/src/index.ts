@@ -17,7 +17,12 @@ import { WebSocketHandler } from "./websocket/WebSocketHandler";
 const port = Number(process.env.PORT ?? 3000);
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ["https://excalidraw-fullstack.vercel.app", "http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.get("/health", healthController);
 
