@@ -1,21 +1,28 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useState } from "react";
 
 interface UseWebSocketOptions<TMessage> {
   url: string;
+  enabled?: boolean;
   parseMessage: (raw: string) => TMessage | null;
   onOpen?: (socket: WebSocket) => void;
   onMessage?: (message: TMessage) => void;
   onClose?: () => void;
 }
 
+export type ConnectionStatus = "connecting" | "open" | "closed" | "error";
+
 export function useWebSocket<TMessage>({
   url,
+  enabled = true,
   parseMessage,
   onOpen,
   onMessage,
   onClose,
 }: UseWebSocketOptions<TMessage>) {
   const socketRef = useRef<WebSocket | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const handlersRef = useRef({
     parseMessage,
@@ -34,10 +41,22 @@ export function useWebSocket<TMessage>({
   }, [parseMessage, onOpen, onMessage, onClose]);
 
   useEffect(() => {
+    if (!enabled) {
+      socketRef.current = null;
+      setConnectionStatus("closed");
+      setConnectionError(null);
+      return;
+    }
+
+    setConnectionStatus("connecting");
+    setConnectionError(null);
+
     const socket = new WebSocket(url);
     socketRef.current = socket;
 
     socket.onopen = () => {
+      setConnectionStatus("open");
+      setConnectionError(null);
       handlersRef.current.onOpen?.(socket);
     };
 
@@ -52,7 +71,19 @@ export function useWebSocket<TMessage>({
       }
     };
 
+    socket.onerror = () => {
+      setConnectionStatus("error");
+      setConnectionError("Connection to collaboration server failed.");
+    };
+
     socket.onclose = () => {
+      setConnectionStatus((previousStatus) => {
+        if (previousStatus === "error") {
+          return "error";
+        }
+
+        return "closed";
+      });
       handlersRef.current.onClose?.();
     };
 
@@ -60,7 +91,7 @@ export function useWebSocket<TMessage>({
       socket.close();
       socketRef.current = null;
     };
-  }, [url]);
+  }, [enabled, url]);
 
   const sendJsonMessage = useCallback((payload: unknown) => {
     const socket = socketRef.current;
@@ -75,5 +106,7 @@ export function useWebSocket<TMessage>({
   return {
     socketRef,
     sendJsonMessage,
+    connectionStatus,
+    connectionError,
   };
 }

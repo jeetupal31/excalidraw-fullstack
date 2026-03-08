@@ -12,11 +12,13 @@ import type {
 } from "../types/collaboration";
 import { parseServerMessage } from "../services/socketProtocol";
 import { createClientIdentity } from "../utils/identity";
-import { useWebSocket } from "./useWebSocket";
+import { useWebSocket, type ConnectionStatus } from "./useWebSocket";
 
 interface UseRoomResult {
   users: PresenceUsers;
   remoteCursors: RemoteCursors;
+  connectionStatus: ConnectionStatus;
+  connectionError: string | null;
   registerExcalidrawApi: (api: ExcalidrawImperativeAPI) => void;
   handleSceneChange: (elements: readonly ExcalidrawElement[]) => void;
   handlePointerMove: (event: PointerEvent<HTMLDivElement>) => void;
@@ -25,7 +27,7 @@ interface UseRoomResult {
 
 const DEFAULT_WS_BASE_URL = "ws://localhost:3000";
 
-export function useRoom(roomId: string): UseRoomResult {
+export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const identityRef = useRef(createClientIdentity());
   const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
@@ -124,8 +126,9 @@ export function useRoom(roomId: string): UseRoomResult {
     }
   }, []);
 
-  const { sendJsonMessage } = useWebSocket<ServerMessage>({
+  const { sendJsonMessage, connectionStatus, connectionError } = useWebSocket<ServerMessage>({
     url: socketUrl,
+    enabled,
     parseMessage: parseSocketMessage,
     onOpen: (socket) => {
       const joinPayload: ClientMessage = {
@@ -197,6 +200,8 @@ export function useRoom(roomId: string): UseRoomResult {
   return {
     users,
     remoteCursors,
+    connectionStatus,
+    connectionError,
     registerExcalidrawApi,
     handleSceneChange,
     handlePointerMove,
