@@ -11,7 +11,7 @@ export function PresencePanel({ users }: PresencePanelProps) {
 
   return (
     <aside
-      className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4"
+      className="absolute right-2 top-[72px] z-10 sm:right-4 sm:top-[72px]"
       style={{ minWidth: collapsed ? "auto" : 160 }}
     >
       <div className="rounded-xl border border-slate-200 bg-white/95 shadow-lg backdrop-blur">

@@ -6,14 +6,19 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { WebSocketServer } from "ws";
 import { healthController } from "./controllers/healthController";
+import { createAuthController } from "./controllers/authController";
+import { createBoardController } from "./controllers/boardController";
 import { RoomManager } from "./rooms/RoomManager";
 import { DatabaseService } from "./services/DatabaseService";
+import { AuthService } from "./services/authService";
+import { createAuthMiddleware, requireAuth } from "./middleware/authMiddleware";
 import { WebSocketHandler } from "./websocket/WebSocketHandler";
 
 const port = Number(process.env.PORT ?? 3000);
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 app.get("/health", healthController);
 
 const server = createServer(app);
@@ -27,8 +32,27 @@ if (!databaseUrl) {
 const adapter = new PrismaPg({ connectionString: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 const databaseService = new DatabaseService(prisma);
+const authService = new AuthService(prisma);
 const roomManager = new RoomManager();
-const webSocketHandler = new WebSocketHandler(roomManager, databaseService);
+const webSocketHandler = new WebSocketHandler(roomManager, databaseService, authService);
+
+// Auth middleware — attaches req.user if valid JWT is present
+app.use(createAuthMiddleware(authService));
+
+// Auth routes
+const authController = createAuthController(authService);
+app.post("/api/auth/signup", authController.signup);
+app.post("/api/auth/login", authController.login);
+app.get("/api/auth/me", requireAuth, authController.me);
+
+// Board routes
+const boardController = createBoardController(databaseService);
+app.get("/api/boards", requireAuth, boardController.getUserBoards);
+app.patch("/api/boards/:id", requireAuth, boardController.renameBoard);
+app.delete("/api/boards/:id", requireAuth, boardController.deleteBoard);
+app.get("/api/boards/:id/versions", requireAuth, boardController.getVersions);
+app.post("/api/boards/:id/versions", requireAuth, boardController.saveVersion);
+app.post("/api/boards/:id/restore", requireAuth, boardController.restoreVersion);
 
 wss.on("connection", (socket, request) => {
   void webSocketHandler.handleConnection(socket, request);

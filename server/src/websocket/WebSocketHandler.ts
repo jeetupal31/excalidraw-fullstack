@@ -10,6 +10,7 @@ import type {
 } from "../types/messages";
 import { RoomManager } from "../rooms/RoomManager";
 import { DatabaseService } from "../services/DatabaseService";
+import type { AuthService, AuthUser } from "../services/authService";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -48,16 +49,37 @@ function isClientMessage(value: unknown): value is ClientMessage {
 }
 
 export class WebSocketHandler {
+  private socketRoles = new WeakMap<WebSocket, string>();
+
   constructor(
     private readonly roomManager: RoomManager,
-    private readonly databaseService: DatabaseService
+    private readonly databaseService: DatabaseService,
+    private readonly authService: AuthService
   ) {}
 
   async handleConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
     const roomId = this.resolveRoomId(request);
+    const user = this.resolveUser(request);
+    const requestedRole = this.resolveRequestedRole(request);
+    
+    // Default to editor unless they requested a viewer role specifically via URL
+    const role = requestedRole === "viewer" ? "viewer" : "editor";
+    this.socketRoles.set(socket, role);
 
     this.roomManager.addSocketToRoom(roomId, socket);
-    console.log(`Client connected to room: ${roomId}`);
+    console.log(`Client connected to room: ${roomId}${user ? ` (user: ${user.username})` : " (guest)"} as ${role}`);
+
+    // If authenticated, auto-create board membership
+    if (user && role !== "viewer") {
+      try {
+        const existingRole = await this.databaseService.getBoardRole(roomId, user.id);
+        if (!existingRole) {
+          await this.databaseService.addBoardMember(roomId, user.id, "editor");
+        }
+      } catch {
+        // Board may not exist yet — membership will be set when the board is first saved
+      }
+    }
 
     const boardState = await this.databaseService.loadBoardState(roomId);
     if (boardState) {
@@ -70,10 +92,11 @@ export class WebSocketHandler {
     }
 
     socket.on("message", (rawData) => {
-      void this.handleMessage(roomId, socket, rawData);
+      void this.handleMessage(roomId, socket, rawData, user);
     });
 
     socket.on("close", () => {
+      this.socketRoles.delete(socket);
       this.handleClose(socket);
     });
   }
@@ -83,22 +106,49 @@ export class WebSocketHandler {
     return url.searchParams.get("room") ?? "default";
   }
 
-  private async handleMessage(roomId: string, socket: WebSocket, rawData: RawData): Promise<void> {
+  private resolveRequestedRole(request: IncomingMessage): string | null {
+    const url = new URL(request.url ?? "", "http://localhost");
+    return url.searchParams.get("role");
+  }
+
+  private resolveUser(request: IncomingMessage): AuthUser | null {
+    const url = new URL(request.url ?? "", "http://localhost");
+    const token = url.searchParams.get("token");
+
+    if (!token) {
+      return null;
+    }
+
+    return this.authService.verifyToken(token);
+  }
+
+  private async handleMessage(
+    roomId: string,
+    socket: WebSocket,
+    rawData: RawData,
+    user: AuthUser | null
+  ): Promise<void> {
     const payload = this.parseMessage(rawData.toString());
     if (!payload) {
       return;
     }
+    
+    const role = this.socketRoles.get(socket) ?? "viewer"; // default secure
+    const isViewer = role === "viewer";
 
     switch (payload.type) {
       case "join":
-        this.handleJoin(socket, payload.clientId, payload.username);
+        this.handleJoin(socket, payload.clientId, user?.username ?? payload.username);
         break;
       case "scene-update":
-        await this.handleSceneUpdate(roomId, socket, payload);
+        await this.handleSceneUpdate(roomId, socket, payload, user, isViewer);
         break;
       case "cursor":
       case "cursor-remove":
-        this.broadcastToRoom(roomId, payload, socket);
+        // Viewers shouldn't broadcast cursors to avoid confusing editors
+        if (!isViewer) {
+          this.broadcastToRoom(roomId, payload, socket);
+        }
         break;
       default:
         break;
@@ -117,14 +167,33 @@ export class WebSocketHandler {
   private async handleSceneUpdate(
     roomId: string,
     socket: WebSocket,
-    payload: SceneUpdateMessage
+    payload: SceneUpdateMessage,
+    user: AuthUser | null,
+    isViewer: boolean
   ): Promise<void> {
+    if (isViewer) {
+      // Secretly drop updates meant for viewers so they cannot modify the board
+      return;
+    }
+
     // Scene updates are persisted first so reconnecting clients always get the latest committed state.
     await this.databaseService.saveBoardState(
       roomId,
       payload.elements as Prisma.InputJsonValue,
       payload.files as Prisma.InputJsonValue | undefined
     );
+
+    // If authenticated and board membership doesn't exist yet, create it now
+    if (user) {
+      try {
+        const existingRole = await this.databaseService.getBoardRole(roomId, user.id);
+        if (!existingRole) {
+          await this.databaseService.addBoardMember(roomId, user.id, "owner");
+        }
+      } catch {
+        // Non-critical error — membership creation can be retried
+      }
+    }
 
     // We skip the sender to prevent echo loops while still syncing all peers in the room.
     this.broadcastToRoom(roomId, payload, socket);

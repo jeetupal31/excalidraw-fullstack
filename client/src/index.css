@@ -2,25 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
-  color: #0f172a;
-  background-color: #f8fafc;
+@layer base {
+  :root {
+    font-family:
+      "Inter",
+      ui-sans-serif,
+      system-ui,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply m-0 flex min-h-screen w-full flex-col bg-white text-slate-900 transition-colors duration-300 dark:bg-[#09090b] dark:text-zinc-50;
+  }
+
+  /* Professional SaaS Mesh Gradient (Subtle Zinc/Slate/Indigo) */
+  .bg-mesh-light {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    width: 100vw;
+    height: 100vh;
+    background-color: #ffffff;
+    background-image: radial-gradient(at 0% 0%, hsla(240, 5%, 96%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(220, 14%, 96%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(240, 5%, 96%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(220, 14%, 96%, 1) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(226, 70%, 94%, 0.4) 0px, transparent 50%);
+    opacity: 1;
+  }
+
+  .dark .bg-mesh-light {
+    background-color: #09090b;
+    background-image: radial-gradient(at 0% 0%, hsla(240, 5%, 8%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(220, 14%, 8%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(240, 5%, 8%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(220, 14%, 8%, 1) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(226, 70%, 15%, 0.3) 0px, transparent 50%);
+    opacity: 1;
+  }
+
+  /* Professional Glass Utilities */
+  .glass-panel {
+    @apply border border-slate-200/60 bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl dark:border-white/5 dark:bg-zinc-900/70 dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)];
+  }
+
+  .glass-button {
+    @apply border border-slate-200/60 bg-white/40 backdrop-blur-md transition-all hover:bg-white/80 dark:border-white/5 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80;
+  }
+
+  /* Excalidraw UI Overrides - Pushing tools down below the Navbar */
+  .excalidraw .layer-ui__wrapper .App-menu_top {
+    margin-top: 80px !important;
+  }
+  @media (min-width: 640px) {
+    .excalidraw .layer-ui__wrapper .App-menu_top {
+      margin-top: 88px !important;
+    }
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body,
 #root {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-}
-
-body {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  background-color: #f8fafc;
+  width: 100%;
 }

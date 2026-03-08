@@ -13,6 +13,7 @@ import type {
 } from "../types/collaboration";
 import { parseServerMessage } from "../services/socketProtocol";
 import { createClientIdentity } from "../utils/identity";
+import { useAuth } from "../contexts/AuthContext";
 import { useWebSocket, type ConnectionStatus } from "./useWebSocket";
 
 interface UseRoomResult {
@@ -24,11 +25,13 @@ interface UseRoomResult {
   handleSceneChange: (elements: readonly ExcalidrawElement[]) => void;
   handlePointerMove: (event: PointerEvent<HTMLDivElement>) => void;
   handlePointerLeave: () => void;
+  isViewer: boolean;
 }
 
 const DEFAULT_WS_BASE_URL = "ws://localhost:3000";
 
 export function useRoom(roomId: string, enabled = true): UseRoomResult {
+  const { user, token } = useAuth();
   const identityRef = useRef(createClientIdentity());
   const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
@@ -42,8 +45,23 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
 
   const socketUrl = useMemo(() => {
     const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL ?? DEFAULT_WS_BASE_URL;
-    return `${wsBaseUrl}?room=${encodeURIComponent(roomId)}`;
-  }, [roomId]);
+    let url = `${wsBaseUrl}?room=${encodeURIComponent(roomId)}`;
+    if (token) {
+      url += `&token=${encodeURIComponent(token)}`;
+    }
+    
+    // Pass along viewer role if present in the browser URL
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("role") === "viewer") {
+      url += `&role=viewer`;
+    }
+    
+    return url;
+  }, [roomId, token]);
+  
+  const isViewer = useMemo(() => {
+    return new URLSearchParams(window.location.search).get("role") === "viewer";
+  }, []);
 
   const applyRemoteUpdate = useCallback((elements: SceneElements, files?: SceneFiles) => {
     const api = excalidrawApiRef.current;
@@ -143,7 +161,7 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
       const joinPayload: ClientMessage = {
         type: "join",
         clientId: identityRef.current.clientId,
-        username: identityRef.current.username,
+        username: user?.username ?? identityRef.current.username,
       };
 
       socket.send(JSON.stringify(joinPayload));
@@ -220,5 +238,6 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
     handleSceneChange,
     handlePointerMove,
     handlePointerLeave,
+    isViewer,
   };
 }

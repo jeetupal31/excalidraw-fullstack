@@ -6,9 +6,44 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  username  String        @unique
+  password  String
+  createdAt DateTime      @default(now())
+  boards    BoardMember[]
+}
+
 model Board {
-  id        String   @id
+  id        String        @id
+  name      String        @default("Untitled Board")
+  elements  Json
+  files     Json          @default("{}")
+  createdBy String?
+  updatedAt DateTime      @updatedAt
+  members   BoardMember[]
+  versions  BoardVersion[]
+}
+
+model BoardMember {
+  id      String @id @default(cuid())
+  userId  String
+  boardId String
+  role    String @default("editor")
+  user    User   @relation(fields: [userId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
+
+  @@unique([userId, boardId])
+}
+
+model BoardVersion {
+  id        String   @id @default(cuid())
+  boardId   String
   elements  Json
   files     Json     @default("{}")
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  board     Board    @relation(fields: [boardId], references: [id])
+
+  @@index([boardId, createdAt])
 }

@@ -9,10 +9,16 @@ function randomColor(): string {
   return `hsl(${hue}, 70%, 50%)`;
 }
 
+export function setGuestName(name: string): void {
+  sessionStorage.setItem("guest_name", name);
+}
+
 export function createClientIdentity(): ClientIdentity {
+  const cachedName = sessionStorage.getItem("guest_name");
+  
   return {
     clientId: Math.random().toString(36).slice(2),
-    username: `User-${Math.floor(Math.random() * 1000)}`,
+    username: cachedName || `User-${Math.floor(Math.random() * 1000)}`,
     color: randomColor(),
   };
 }

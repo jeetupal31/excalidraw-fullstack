@@ -1,128 +1,184 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
+import { 
+  Plus, 
+  LogOut, 
+  User, 
+  Sun, 
+  Moon, 
+  Menu, 
+  X, 
+  LayoutDashboard
+} from "lucide-react";
 import { useBoardNavigation } from "../hooks/useBoardNavigation";
+import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 export function Navbar() {
   const { createBoard } = useBoardNavigation();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-10">
-        <div className="flex items-center gap-4 sm:gap-5">
-          <NavLink className="text-base font-bold tracking-tight text-slate-900" to="/">
-            <span className="bg-gradient-to-r from-teal-600 to-emerald-500 bg-clip-text text-transparent">Excali</span>
-            <span>Draw Live</span>
+    <header className="fixed top-4 z-40 w-full px-4 sm:top-6 sm:px-8">
+      <nav className="glass-panel mx-auto flex w-full max-w-6xl items-center justify-between rounded-2xl px-5 py-3 transition-all duration-300">
+        <div className="flex items-center gap-8">
+          <NavLink className="flex items-center gap-3 text-base font-bold tracking-tight text-slate-900 dark:text-white" to="/">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 font-serif text-lg font-black text-white shadow-lg shadow-slate-900/10 dark:bg-white dark:text-slate-900 dark:shadow-white/5">
+              E
+            </div>
+            <span className="hidden sm:inline-block font-bold">
+              Excali<span className="font-medium text-slate-400 dark:text-zinc-500">Live</span>
+            </span>
           </NavLink>
-          <NavLink
-            className={({ isActive }) =>
-              `hidden text-sm transition-colors sm:inline ${
-                isActive ? "font-semibold text-teal-700" : "text-slate-600 hover:text-slate-900"
-              }`
-            }
-            end
-            to="/"
-          >
-            Home
-          </NavLink>
-        </div>
-
-        {/* Desktop actions */}
-        <div className="hidden items-center gap-3 sm:flex">
-          <button
-            className="rounded-full bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
-            onClick={createBoard}
-            type="button"
-          >
-            New Board
-          </button>
-          <a
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
-            href="https://github.com/jeetupal31"
-            rel="noreferrer"
-            target="_blank"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                clipRule="evenodd"
-              />
-            </svg>
-            GitHub
-          </a>
-        </div>
-
-        {/* Mobile hamburger button */}
-        <button
-          className="inline-flex items-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 sm:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          type="button"
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          )}
-        </button>
-      </nav>
-
-      {/* Mobile dropdown */}
-      {mobileMenuOpen && (
-        <div className="border-t border-slate-200 bg-white px-4 pb-4 pt-3 sm:hidden">
-          <div className="flex flex-col gap-3">
+          
+          <div className="hidden items-center gap-6 md:flex">
             <NavLink
               className={({ isActive }) =>
-                `text-sm transition-colors ${
-                  isActive ? "font-semibold text-teal-700" : "text-slate-600 hover:text-slate-900"
+                `flex items-center gap-2 text-[13px] font-bold tracking-wide transition-all ${
+                  isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 hover:text-slate-900 dark:text-zinc-500 dark:hover:text-zinc-200"
                 }`
               }
               end
               to="/"
-              onClick={() => setMobileMenuOpen(false)}
             >
-              Home
+              <LayoutDashboard size={16} />
+              Workspace
             </NavLink>
-            <button
-              className="w-full rounded-full bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
-              onClick={() => {
-                createBoard();
-                setMobileMenuOpen(false);
-              }}
-              type="button"
-            >
-              New Board
-            </button>
-            <a
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
-              href="https://github.com/jeetupal31"
-              rel="noreferrer"
-              target="_blank"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+          </div>
+        </div>
+
+        {/* Desktop actions */}
+        <div className="hidden items-center gap-4 sm:flex">
+          <button
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/50 bg-slate-50/50 text-slate-500 transition-all hover:bg-white hover:text-slate-900 dark:border-white/5 dark:bg-zinc-800/50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-amber-300"
+            aria-label="Toggle Theme"
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-px bg-slate-200 dark:bg-zinc-800" />
+              <div className="flex items-center gap-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-1.5 text-xs font-bold tracking-wide text-indigo-700 backdrop-blur-sm dark:border-indigo-900/30 dark:bg-indigo-500/10 dark:text-indigo-400">
+                <User size={14} strokeWidth={3} />
+                {user?.username}
+              </div>
+              <button
+                className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-[13px] font-bold tracking-wide text-white transition-all hover:bg-indigo-600 dark:bg-white dark:text-slate-900 dark:hover:bg-zinc-200"
+                onClick={createBoard}
+                type="button"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              GitHub
-            </a>
+                <Plus size={16} strokeWidth={3} />
+                New Board
+              </button>
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+                onClick={logout}
+                title="Sign Out"
+                type="button"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Link
+                className="text-[13px] font-bold text-slate-600 transition hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
+                to="/login"
+              >
+                Sign In
+              </Link>
+              <button
+                className="flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2 text-[13px] font-bold tracking-wide text-white transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-zinc-200"
+                onClick={createBoard}
+                type="button"
+              >
+                Launch
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile menu items */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <button
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/50 bg-slate-50/50 text-slate-500 dark:border-white/5 dark:bg-zinc-800/50 dark:text-zinc-400"
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            type="button"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="glass-panel absolute inset-x-4 top-20 rounded-xl p-5 shadow-2xl sm:hidden">
+          <div className="flex flex-col gap-3">
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3 dark:border-zinc-800">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">
+                    <User size={20} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-400 dark:text-zinc-600 uppercase tracking-widest leading-none mb-1">Authenticated</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{user?.username}</span>
+                  </div>
+                </div>
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-3.5 text-[13px] font-bold text-white dark:bg-white dark:text-slate-900"
+                  onClick={() => {
+                    createBoard();
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  <Plus size={18} />
+                  New Board
+                </button>
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3.5 text-[13px] font-bold text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  <LogOut size={18} />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="w-full rounded-lg bg-slate-900 px-4 py-3.5 text-[13px] font-bold text-white dark:bg-white dark:text-slate-900"
+                  onClick={() => {
+                    createBoard();
+                    setMobileMenuOpen(false);
+                  }}
+                  type="button"
+                >
+                  Launch App
+                </button>
+                <Link
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3.5 text-[13px] font-bold text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

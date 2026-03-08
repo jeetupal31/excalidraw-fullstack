@@ -3,12 +3,15 @@ import { Navbar } from "./components/Navbar";
 
 function App() {
   return (
-    <div className="flex h-full min-h-screen flex-col bg-slate-50 text-slate-900">
-      <Navbar />
-      <div className="min-h-0 flex-1">
-        <Outlet />
+    <>
+      <div className="bg-mesh-light" />
+      <div className="relative flex min-h-screen w-full flex-col text-slate-900 dark:text-slate-50">
+        <Navbar />
+        <div className="relative z-10 flex w-full flex-1 flex-col overflow-hidden">
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
