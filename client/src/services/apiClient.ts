@@ -1,8 +1,7 @@
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 // Ensure No Trailing Slash
-const API_BASE_URL = VITE_API_BASE_URL.endsWith("/")
-  ? VITE_API_BASE_URL.slice(0, -1)
-  : VITE_API_BASE_URL;
+const API_BASE_URL = VITE_API_BASE_URL.replace(/\/$/, "");
 
 function getStoredToken(): string | null {
   return localStorage.getItem("auth_token");
@@ -67,6 +66,11 @@ export async function apiRequest<T>(
         status: 0,
       };
     }
-    return { error: "Network error. Is the server running?", status: 0 };
+    return { 
+      error: url.includes("localhost") 
+        ? "Network error. Is the local server running?" 
+        : "Connection failed. This might be a CORS error or the server is down.", 
+      status: 0 
+    };
   }
 }
