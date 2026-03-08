@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+// Ensure No Trailing Slash
+const API_BASE_URL = VITE_API_BASE_URL.endsWith("/")
+  ? VITE_API_BASE_URL.slice(0, -1)
+  : VITE_API_BASE_URL;
 
 function getStoredToken(): string | null {
   return localStorage.getItem("auth_token");
@@ -35,8 +39,12 @@ export async function apiRequest<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_BASE_URL}${normalizedPath}`;
+
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(url, {
       ...options,
       headers,
     });
@@ -51,7 +59,14 @@ export async function apiRequest<T>(
     }
 
     return { data: body as T, status: response.status };
-  } catch {
+  } catch (err) {
+    console.error("API Request Error:", err);
+    if (url.includes("localhost") && window.location.protocol === "https:") {
+      return {
+        error: "Security Block: HTTPS sites cannot connect to http://localhost. See deployment_guide.md for help.",
+        status: 0,
+      };
+    }
     return { error: "Network error. Is the server running?", status: 0 };
   }
 }

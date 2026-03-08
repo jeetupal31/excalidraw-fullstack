@@ -15,11 +15,12 @@ import { createAuthMiddleware, requireAuth } from "./middleware/authMiddleware";
 import { WebSocketHandler } from "./websocket/WebSocketHandler";
 
 const port = Number(process.env.PORT ?? 3000);
+const corsOrigins = process.env.CORS_ORIGINS?.split(",").map(o => o.trim()) ?? ["http://localhost:5173"];
 
 const app = express();
 app.use(
   cors({
-    origin: ["https://excalidraw-fullstack.vercel.app", "http://localhost:5173"],
+    origin: corsOrigins,
     credentials: true,
   })
 );
