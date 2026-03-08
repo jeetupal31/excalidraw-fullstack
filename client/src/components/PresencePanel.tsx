@@ -48,7 +48,7 @@ export function PresencePanel({ users }: PresencePanelProps) {
         ) : (
           userNames.map((name) => (
             <span key={name} style={userItemStyle}>
-              ? {name}
+              - {name}
             </span>
           ))
         )}
