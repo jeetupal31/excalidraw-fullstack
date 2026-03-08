@@ -8,6 +8,7 @@ import type {
   RemoteCursors,
   PresenceUsers,
   SceneElements,
+  SceneFiles,
   ServerMessage,
 } from "../types/collaboration";
 import { parseServerMessage } from "../services/socketProtocol";
@@ -34,7 +35,7 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const [users, setUsers] = useState<PresenceUsers>({});
   const [remoteCursors, setRemoteCursors] = useState<RemoteCursors>({});
 
-  const pendingRemoteElementsRef = useRef<SceneElements | null>(null);
+  const pendingRemoteElementsRef = useRef<{ elements: SceneElements; files?: SceneFiles } | null>(null);
   const isApplyingRemoteUpdateRef = useRef(false);
   const lastRemoteSceneVersionRef = useRef<number | null>(null);
   const lastSentSceneVersionRef = useRef(0);
@@ -44,18 +45,18 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
     return `${wsBaseUrl}?room=${encodeURIComponent(roomId)}`;
   }, [roomId]);
 
-  const applyRemoteElements = useCallback((elements: SceneElements) => {
+  const applyRemoteUpdate = useCallback((elements: SceneElements, files?: SceneFiles) => {
     const api = excalidrawApiRef.current;
 
     if (!api) {
-      pendingRemoteElementsRef.current = elements;
+      pendingRemoteElementsRef.current = { elements, files };
       return;
     }
 
     const incomingSceneVersion = getSceneVersion(elements);
     const localSceneVersion = getSceneVersion(api.getSceneElementsIncludingDeleted());
 
-    if (incomingSceneVersion === localSceneVersion) {
+    if (incomingSceneVersion === localSceneVersion && !files) {
       return;
     }
 
@@ -67,6 +68,14 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
       elements,
       captureUpdate: CaptureUpdateAction.NEVER,
     });
+
+    // Apply binary file data (images) if present
+    if (files && Object.keys(files).length > 0) {
+      const fileArray = Object.values(files);
+      if (fileArray.length > 0) {
+        api.addFiles(fileArray);
+      }
+    }
 
     queueMicrotask(() => {
       isApplyingRemoteUpdateRef.current = false;
@@ -81,18 +90,18 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
         return;
       }
 
-      const pendingElements = pendingRemoteElementsRef.current;
+      const { elements, files } = pendingRemoteElementsRef.current;
       pendingRemoteElementsRef.current = null;
-      applyRemoteElements(pendingElements);
+      applyRemoteUpdate(elements, files);
     },
-    [applyRemoteElements]
+    [applyRemoteUpdate]
   );
 
   const handleServerMessage = useCallback(
     (message: ServerMessage) => {
       switch (message.type) {
         case "scene-update":
-          applyRemoteElements(message.elements);
+          applyRemoteUpdate(message.elements, message.files);
           break;
         case "cursor":
           setRemoteCursors((previousCursors) => ({
@@ -114,7 +123,7 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
           break;
       }
     },
-    [applyRemoteElements]
+    [applyRemoteUpdate]
   );
 
   const parseSocketMessage = useCallback((rawMessage: string): ServerMessage | null => {
@@ -163,10 +172,15 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
         return;
       }
 
+      // Collect binary file data (images) from the Excalidraw API
+      const api = excalidrawApiRef.current;
+      const files = api ? api.getFiles() : undefined;
+
       // Only meaningful scene deltas are emitted, cutting unnecessary websocket traffic.
       sendJsonMessage({
         type: "scene-update",
         elements,
+        files: files && Object.keys(files).length > 0 ? files : undefined,
       } satisfies ClientMessage);
 
       lastSentSceneVersionRef.current = sceneVersion;

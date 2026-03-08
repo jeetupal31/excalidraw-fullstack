@@ -59,12 +59,14 @@ export class WebSocketHandler {
     this.roomManager.addSocketToRoom(roomId, socket);
     console.log(`Client connected to room: ${roomId}`);
 
-    const elements = await this.databaseService.loadBoardState(roomId);
-    if (elements) {
-      this.send(socket, {
+    const boardState = await this.databaseService.loadBoardState(roomId);
+    if (boardState) {
+      const scenePayload: ServerMessage = {
         type: "scene-update",
-        elements,
-      });
+        elements: boardState.elements as SceneUpdateMessage["elements"],
+        files: boardState.files as SceneUpdateMessage["files"],
+      };
+      this.send(socket, scenePayload);
     }
 
     socket.on("message", (rawData) => {
@@ -118,7 +120,11 @@ export class WebSocketHandler {
     payload: SceneUpdateMessage
   ): Promise<void> {
     // Scene updates are persisted first so reconnecting clients always get the latest committed state.
-    await this.databaseService.saveBoardState(roomId, payload.elements as Prisma.InputJsonValue);
+    await this.databaseService.saveBoardState(
+      roomId,
+      payload.elements as Prisma.InputJsonValue,
+      payload.files as Prisma.InputJsonValue | undefined
+    );
 
     // We skip the sender to prevent echo loops while still syncing all peers in the room.
     this.broadcastToRoom(roomId, payload, socket);

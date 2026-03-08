@@ -1,6 +1,7 @@
 import type {
   CursorPosition,
   SceneElements,
+  SceneFiles,
   ServerMessage,
 } from "../types/collaboration";
 
@@ -43,6 +44,7 @@ export function parseServerMessage(rawData: unknown): ServerMessage | null {
       return {
         type: "scene-update",
         elements: rawData.elements as SceneElements,
+        files: isObject(rawData.files) ? (rawData.files as SceneFiles) : undefined,
       };
     case "cursor":
       if (typeof rawData.clientId !== "string" || !isCursor(rawData.cursor)) {

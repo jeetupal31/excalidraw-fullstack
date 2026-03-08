@@ -1,4 +1,5 @@
 export type SceneElements = unknown;
+export type SceneFiles = unknown;
 
 export interface CursorPayload {
   x: number;
@@ -16,6 +17,7 @@ export interface JoinMessage {
 export interface SceneUpdateMessage {
   type: "scene-update";
   elements: SceneElements;
+  files?: SceneFiles;
 }
 
 export interface CursorMessage {

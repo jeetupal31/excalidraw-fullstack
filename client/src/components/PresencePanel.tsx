@@ -1,56 +1,57 @@
-import type { CSSProperties } from "react";
+import { useState } from "react";
 import type { PresenceUsers } from "../types/collaboration";
 
 interface PresencePanelProps {
   users: PresenceUsers;
 }
 
-const panelStyle: CSSProperties = {
-  position: "absolute",
-  top: 16,
-  right: 16,
-  minWidth: 180,
-  background: "rgba(255, 255, 255, 0.95)",
-  border: "1px solid #d9e2ec",
-  borderRadius: 10,
-  padding: 12,
-  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.15)",
-  zIndex: 10,
-};
-
-const titleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  fontWeight: 700,
-  color: "#0f172a",
-};
-
-const userListStyle: CSSProperties = {
-  marginTop: 8,
-  display: "grid",
-  gap: 6,
-};
-
-const userItemStyle: CSSProperties = {
-  fontSize: 13,
-  color: "#334155",
-};
-
 export function PresencePanel({ users }: PresencePanelProps) {
   const userNames = Object.values(users);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside style={panelStyle}>
-      <h2 style={titleStyle}>Active Users ({userNames.length})</h2>
-      <div style={userListStyle}>
-        {userNames.length === 0 ? (
-          <span style={userItemStyle}>Waiting for collaborators...</span>
-        ) : (
-          userNames.map((name) => (
-            <span key={name} style={userItemStyle}>
-              - {name}
-            </span>
-          ))
+    <aside
+      className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4"
+      style={{ minWidth: collapsed ? "auto" : 160 }}
+    >
+      <div className="rounded-xl border border-slate-200 bg-white/95 shadow-lg backdrop-blur">
+        <button
+          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+          onClick={() => setCollapsed(!collapsed)}
+          type="button"
+        >
+          <span className="text-xs font-bold text-slate-900 sm:text-sm">
+            👥 {userNames.length > 0 ? `Active (${userNames.length})` : "Users"}
+          </span>
+          <svg
+            className={`h-3.5 w-3.5 text-slate-500 transition-transform ${collapsed ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        {!collapsed && (
+          <div className="border-t border-slate-100 px-3 pb-2 pt-1">
+            {userNames.length === 0 ? (
+              <span className="block py-1 text-xs text-slate-400">Waiting for others...</span>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {userNames.map((name) => (
+                  <span
+                    key={name}
+                    className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-slate-700"
+                  >
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </aside>

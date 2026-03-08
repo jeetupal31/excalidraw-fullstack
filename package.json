@@ -1,8 +1,8 @@
 {
-  "name": "realtime-collaborative-whiteboard",
+  "name": "excalidraw-live",
   "version": "1.0.0",
   "private": true,
-  "description": "Production-grade realtime collaborative whiteboard using React, Excalidraw, Node.js, WebSocket, and PostgreSQL.",
+  "description": "ExcaliDraw Live — Production-grade realtime collaborative whiteboard using React, Excalidraw, Node.js, WebSocket, and PostgreSQL.",
   "scripts": {
     "postinstall": "npm install --prefix server && npm install --prefix client",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",

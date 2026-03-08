@@ -1,6 +1,8 @@
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
+import type { BinaryFileData } from "@excalidraw/excalidraw/types";
 
 export type SceneElements = readonly ExcalidrawElement[];
+export type SceneFiles = Record<string, BinaryFileData>;
 
 export interface CursorPosition {
   x: number;
@@ -21,6 +23,7 @@ export interface JoinMessage {
 export interface SceneUpdateMessage {
   type: "scene-update";
   elements: SceneElements;
+  files?: SceneFiles;
 }
 
 export interface CursorMessage {

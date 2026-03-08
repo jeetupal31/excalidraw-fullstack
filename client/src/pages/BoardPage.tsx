@@ -1,4 +1,4 @@
-import { Excalidraw } from "@excalidraw/excalidraw";
+import { Excalidraw, Sidebar } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import { useCallback, useState } from "react";
@@ -9,6 +9,8 @@ import { PresencePanel } from "../components/PresencePanel";
 import { useRoom } from "../hooks/useRoom";
 import { exportBoardAsJson, exportBoardAsPng } from "../services/exportService";
 import { isValidBoardId, normalizeBoardId } from "../services/board";
+
+const SIDEBAR_NAME = "board-info";
 
 export function BoardPage() {
   const { boardId: rawBoardId = "" } = useParams();
@@ -75,9 +77,14 @@ export function BoardPage() {
     }
   }, [boardId, excalidrawApi]);
 
+  const toggleSidebar = useCallback(() => {
+    if (!excalidrawApi) return;
+    excalidrawApi.toggleSidebar({ name: SIDEBAR_NAME });
+  }, [excalidrawApi]);
+
   if (!isBoardIdValid) {
     return (
-      <div className="flex h-full items-center justify-center px-6">
+      <div className="flex h-full items-center justify-center px-4 sm:px-6">
         <div className="max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
           <h1 className="text-lg font-semibold text-rose-800">Invalid board ID</h1>
           <p className="mt-2 text-sm leading-relaxed text-rose-700">
@@ -94,6 +101,8 @@ export function BoardPage() {
     );
   }
 
+  const userNames = Object.values(users);
+
   return (
     <main
       className="relative h-full w-full overflow-hidden"
@@ -104,6 +113,81 @@ export function BoardPage() {
         excalidrawAPI={registerBoardApi}
         isCollaborating
         onChange={handleSceneChange}
+        renderSidebar={() => (
+          <Sidebar name={SIDEBAR_NAME}>
+            <Sidebar.Header>Board Info</Sidebar.Header>
+            <div style={{ padding: 16 }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", marginBottom: 6 }}>
+                  Board ID
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", wordBreak: "break-all" }}>
+                  {boardId}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", marginBottom: 6 }}>
+                  Connection
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor:
+                        connectionStatus === "open" ? "#34d399" :
+                        connectionStatus === "connecting" ? "#fbbf24" :
+                        connectionStatus === "error" ? "#f87171" : "#94a3b8",
+                    }}
+                  />
+                  <span style={{ fontSize: 13, color: "#334155" }}>
+                    {connectionStatus === "open" ? "Connected" :
+                     connectionStatus === "connecting" ? "Connecting..." :
+                     connectionStatus === "error" ? "Error" : "Disconnected"}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#64748b", marginBottom: 6 }}>
+                  Active Users ({userNames.length})
+                </div>
+                {userNames.length === 0 ? (
+                  <div style={{ fontSize: 13, color: "#94a3b8" }}>Waiting for collaborators...</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {userNames.map((name) => (
+                      <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#334155" }}>
+                        <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#34d399" }} />
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12, marginTop: 4 }}>
+                <Link
+                  to="/"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#0d9488",
+                    textDecoration: "none",
+                  }}
+                >
+                  ← Back to Home
+                </Link>
+              </div>
+            </div>
+          </Sidebar>
+        )}
       />
 
       <CursorLayer cursors={remoteCursors} />
@@ -118,20 +202,29 @@ export function BoardPage() {
         onExportPng={handleExportPng}
       />
 
+      {/* Sidebar toggle button */}
+      <button
+        className="pointer-events-auto absolute bottom-4 left-2 z-20 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-md transition hover:bg-slate-100 sm:left-4"
+        onClick={toggleSidebar}
+        type="button"
+      >
+        ☰ Board Info
+      </button>
+
       {connectionStatus === "connecting" ? (
-        <div className="pointer-events-none absolute bottom-4 left-4 z-20 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+        <div className="pointer-events-none absolute bottom-12 left-2 z-20 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:left-4">
           Establishing realtime connection...
         </div>
       ) : null}
 
       {connectionError ? (
-        <div className="pointer-events-none absolute bottom-4 left-4 z-20 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
+        <div className="pointer-events-none absolute bottom-12 left-2 z-20 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800 sm:left-4">
           {connectionError}
         </div>
       ) : null}
 
       {exportError ? (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-20 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
+        <div className="pointer-events-none absolute bottom-4 right-2 z-20 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800 sm:right-4">
           {exportError}
         </div>
       ) : null}
