@@ -21,7 +21,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-4 z-40 w-full px-4 sm:top-6 sm:px-8">
+    <header className="sticky top-0 z-40 w-full px-4 pt-4 sm:px-8 sm:pt-6">
       <nav className="glass-panel mx-auto flex w-full max-w-6xl items-center justify-between rounded-2xl px-5 py-3 transition-all duration-300">
         <div className="flex items-center gap-8">
           <NavLink className="flex items-center gap-3 text-base font-bold tracking-tight text-slate-900 dark:text-white" to="/">

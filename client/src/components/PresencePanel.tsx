@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Users } from "lucide-react";
 import type { PresenceUsers } from "../types/collaboration";
 
 interface PresencePanelProps {
@@ -20,8 +21,9 @@ export function PresencePanel({ users }: PresencePanelProps) {
           onClick={() => setCollapsed(!collapsed)}
           type="button"
         >
-          <span className="text-xs font-bold text-slate-900 sm:text-sm">
-            👥 {userNames.length > 0 ? `Active (${userNames.length})` : "Users"}
+          <span className="flex items-center gap-2 text-xs font-bold text-slate-900 sm:text-sm">
+            <Users size={16} strokeWidth={2.5} className="text-indigo-600 dark:text-indigo-400" />
+            {userNames.length > 0 ? `Active (${userNames.length})` : "Users"}
           </span>
           <svg
             className={`h-3.5 w-3.5 text-slate-500 transition-transform ${collapsed ? "rotate-180" : ""}`}

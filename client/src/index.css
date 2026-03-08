@@ -52,14 +52,22 @@
     @apply border border-slate-200/60 bg-white/40 backdrop-blur-md transition-all hover:bg-white/80 dark:border-white/5 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80;
   }
 
-  /* Excalidraw UI Overrides - Pushing tools down below the Navbar */
-  .excalidraw .layer-ui__wrapper .App-menu_top {
-    margin-top: 80px !important;
+  /* Ensure the main toolbar doesn't have a background if it's over our mesh */
+  .excalidraw .App-toolbar {
+    background: transparent !important;
+    border: none !important;
   }
-  @media (min-width: 640px) {
-    .excalidraw .layer-ui__wrapper .App-menu_top {
-      margin-top: 88px !important;
-    }
+}
+
+.board-container {
+  height: calc(100vh - 84px); /* Fallback for when flex is tricky */
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .board-container {
+    height: calc(100vh - 96px);
   }
 }
 

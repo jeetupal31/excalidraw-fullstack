@@ -3,6 +3,7 @@ import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import { useCallback, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { BoardToolbar } from "../components/BoardToolbar";
 import { CursorLayer } from "../components/CursorLayer";
 import { PresencePanel } from "../components/PresencePanel";
@@ -80,10 +81,7 @@ export function BoardPage() {
     }
   }, [boardId, excalidrawApi]);
 
-  const toggleSidebar = useCallback(() => {
-    if (!excalidrawApi) return;
-    excalidrawApi.toggleSidebar({ name: SIDEBAR_NAME });
-  }, [excalidrawApi]);
+
 
   if (!isBoardIdValid) {
     return (
@@ -108,7 +106,7 @@ export function BoardPage() {
 
   return (
     <main
-      className="absolute inset-0 z-0 h-full w-full overflow-hidden"
+      className="board-container relative w-full overflow-hidden"
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
     >
@@ -186,14 +184,21 @@ export function BoardPage() {
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 8,
                       fontSize: 13,
-                      fontWeight: 600,
-                      color: "#0d9488",
+                      fontWeight: 700,
+                      color: "#4f46e5",
                       textDecoration: "none",
+                      backgroundColor: "#f5f3ff",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      transition: "all 0.2s"
                     }}
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = "#ede9fe"; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = "#f5f3ff"; }}
                   >
-                    ← Back to Home
+                    <ArrowLeft size={16} strokeWidth={3} />
+                    Exit to Dashboard
                   </Link>
                 </div>
               </div>
@@ -230,14 +235,7 @@ export function BoardPage() {
         </div>
       )}
 
-      {/* Sidebar toggle button */}
-      <button
-        className="pointer-events-auto absolute bottom-20 left-2 z-20 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-md transition hover:bg-slate-100 sm:left-4"
-        onClick={toggleSidebar}
-        type="button"
-      >
-        ☰ Board Info
-      </button>
+
 
       {connectionStatus === "connecting" ? (
         <div className="pointer-events-none absolute bottom-12 left-2 z-20 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:left-4">

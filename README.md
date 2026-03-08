@@ -1,205 +1,100 @@
-# Realtime Collaborative Whiteboard
+# ExcaliLive
 
 ![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19.x-149ECA?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
-![WebSockets](https://img.shields.io/badge/WebSockets-ws-0B7285)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-A production-focused realtime collaborative whiteboard inspired by Excalidraw Live, built with a modular fullstack architecture and persistent room-based state.
 
-## Overview
+![ExcaliLive Landing Page](screenshots/landing-page.png)
+![ExcaliLive Board Page](screenshots/board-page.png)
 
-This project enables multiple users to draw on the same board in realtime using WebSockets. Each room has a shareable URL, active user presence, live cursor tracking, and durable board persistence backed by PostgreSQL + Prisma.
+ExcaliLive is a premium, production-grade realtime collaborative whiteboard platform. It combines the flexibility of Excalidraw with a high-end SaaS aesthetic, featuring glassmorphic UI, professional typography, and robust security.
 
-## Features
+## ✨ Key Features
 
-- Realtime collaborative drawing with Excalidraw
-- WebSocket-based scene synchronization
-- Room-based boards (`/board/:roomId`)
-- Shareable board URLs
-- Persistent board state in PostgreSQL
-- Live cursor positions for connected users
-- Active user presence panel
-- Backend health endpoint (`GET /health`)
+- **Realtime Collaboration**: Seamless low-latency scene synchronization via WebSockets.
+- **Premium SaaS UI**: A sophisticated design language featuring:
+  - **Glassmorphic Panels**: Translucent, blurred surfaces for a modern "frosted" look.
+  - **Inter Typography**: Enterprise-grade professional font for maximum legibility.
+  - **Lucide Iconography**: Consistent, high-fidelity SVG icons throughout.
+- **Robust Authentication**: Secure JWT-based user accounts and protected workspace routes.
+- **Artifact Ledger**: Comprehensive version history allowing users to save and restore snapshots of their boards.
+- **Live Presence**: Real-time cursor tracking and active user status indicators.
+- **Durable Persistence**: Board states are persisted in PostgreSQL using Prisma ORM.
 
-## Architecture
-
-### High-level data flow
-
-```text
-User Browser
-   |
-React + Excalidraw Client
-   |
-WebSocket (ws)
-   |
-Node.js + Express Collaboration Server
-   |
-DatabaseService (Prisma ORM)
-   |
-PostgreSQL
-```
-
-### Backend module responsibilities
-
-- `RoomManager`: maintains room sockets, users, and room lifecycle
-- `WebSocketHandler`: validates/parses messages, routes events, and broadcasts updates
-- `DatabaseService`: loads/saves board scene state with Prisma
-
-### Project structure
-
-```text
-.
-|-- client/
-|   |-- src/
-|   |   |-- components/
-|   |   |   |-- CursorLayer.tsx
-|   |   |   `-- PresencePanel.tsx
-|   |   |-- hooks/
-|   |   |   |-- useRoom.ts
-|   |   |   `-- useWebSocket.ts
-|   |   |-- services/
-|   |   |   `-- socketProtocol.ts
-|   |   |-- types/
-|   |   |   `-- collaboration.ts
-|   |   |-- utils/
-|   |   |   `-- identity.ts
-|   |   |-- App.tsx
-|   |   `-- main.tsx
-|-- server/
-|   |-- src/
-|   |   |-- controllers/
-|   |   |   `-- healthController.ts
-|   |   |-- rooms/
-|   |   |   `-- RoomManager.ts
-|   |   |-- services/
-|   |   |   `-- DatabaseService.ts
-|   |   |-- websocket/
-|   |   |   `-- WebSocketHandler.ts
-|   |   |-- types/
-|   |   |   `-- messages.ts
-|   |   `-- index.ts
-|-- prisma/
-|   `-- schema.prisma
-|-- screenshots/
-|-- docker-compose.yml
-|-- Dockerfile
-|-- LICENSE
-`-- README.md
-```
-
-## Tech Stack
+## 🛠 Tech Stack
 
 ### Frontend
-
-- React
-- TypeScript
-- Vite
-- Excalidraw
+- **Framework**: React 19 + Vite
+- **Styling**: Tailwind CSS + Custom Glassmorphism System
+- **Typography**: Inter (Google Fonts)
+- **Icons**: Lucide React
+- **Whiteboard**: Excalidraw Component
 
 ### Backend
+- **Runtime**: Node.js
+- **Framework**: Express
+- **Communication**: Custom WebSocket Protocol (`ws`)
+- **Authentication**: JSON Web Tokens (JWT)
 
-- Node.js
-- Express
-- ws (WebSocket)
+### Database
+- **Primary**: PostgreSQL
+- **ORM**: Prisma
 
-### Data
+## 🚀 Getting Started
 
-- PostgreSQL
-- Prisma ORM
+### 1. Requirements
+- Node.js 20+
+- PostgreSQL instance
 
-## Screenshots
-
-Add screenshots inside [`screenshots/`](./screenshots):
-
-- `screenshots/board-view.png`
-- `screenshots/presence-panel.png`
-- `screenshots/shareable-room-url.png`
-
-Example markdown usage:
-
-```md
-![Board View](./screenshots/board-view.png)
-```
-
-## Installation
-
-### 1. Clone and install dependencies
-
+### 2. Installation
 ```bash
-git clone <your-repo-url>
+# Clone the repository
+git clone <repo-url>
 cd excalidraw-fullstack
+
+# Install dependencies
 npm install
 ```
 
-### 2. Configure environment variables
-
-Copy `.env.example` values into runtime env files:
-
+### 3. Configuration
+Copy environment variables to their respective directories:
 - `server/.env`
-- `client/.env`
+- `client/.env` (Vite variables)
 
-Minimum required values:
-
+**Example `.env`:**
 ```env
 PORT=3000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/whiteboard
-VITE_WS_BASE_URL=ws://localhost:3000
+DATABASE_URL="postgresql://user:pass@localhost:5432/excalilive"
+VITE_WS_BASE_URL="ws://localhost:3000"
+JWT_SECRET="your-secure-secret"
 ```
 
-### 3. Run Prisma migrations
-
+### 4. Database Setup
 ```bash
+# Generate Prisma client and run migrations
 npm run prisma:migrate --prefix server
 ```
 
-## Development Setup
-
-Run frontend + backend together from root:
-
+### 5. Running the App
+Run both client and server in development mode:
 ```bash
 npm run dev
 ```
+- Workspace: `http://localhost:5173`
+- API Health: `http://localhost:3000/health`
 
-App URLs:
+## 🏗 Architecture
 
-- Client: `http://localhost:5173`
-- Server health: `http://localhost:3000/health`
-- Room example: `http://localhost:5173/board/interview-demo`
-
-## Deployment
-
-### Docker Compose (recommended)
-
-```bash
-docker compose up --build
+```mermaid
+graph TD
+    Client[React + Excalidraw] <-->|WebSocket / JSON| Server[Node.js + Express]
+    Server <-->|Prisma ORM| DB[(PostgreSQL)]
+    Client -->|HTTP / JWT| Server
 ```
 
-This starts:
-
-- PostgreSQL (`:5432`)
-- Collaboration server (`:3000`)
-- Vite client (`:5173`)
-
-### Manual production build
-
-```bash
-npm run build
-npm run start
-```
-
-## Future Improvements
-
-- Conflict-free replicated data types (CRDT) for advanced merge behavior
-- Authentication + role-based room permissions
-- Board version history and undo across sessions
-- Redis pub/sub for horizontal websocket scaling
-- Rate limiting and abuse protection
-- E2E tests for multi-user collaboration flows
-
-## License
-
-MIT - see [LICENSE](./LICENSE).
+## 📜 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
