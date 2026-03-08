@@ -17,13 +17,31 @@ import { WebSocketHandler } from "./websocket/WebSocketHandler";
 const port = Number(process.env.PORT ?? 3000);
 const corsOrigins = process.env.CORS_ORIGINS?.split(",").map(o => o.trim()) ?? [
   "http://localhost:5173",
-  "https://excalidraw-fullstack.vercel.app"
+  "https://excalidraw-fullstack.vercel.app",
+  "https://excalidraw-fullstack.onrender.com",
+  "https://excalidraw-fullstack-r8w4patgh-jeetu-pals-projects.vercel.app"
 ];
 
 const app = express();
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = 
+        corsOrigins.includes(origin) || 
+        origin.endsWith(".vercel.app") || 
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1");
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked for origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
@@ -68,7 +86,8 @@ wss.on("connection", (socket, request) => {
 });
 
 server.listen(port, () => {
-  console.log(`Collaboration server listening on http://localhost:${port}`);
+  console.log(`Collaboration server listening on port ${port}`);
+  console.log(`Local: http://localhost:${port}`);
 });
 
 const shutdown = async (): Promise<void> => {

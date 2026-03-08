@@ -1,7 +1,17 @@
-const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://excalidraw-fullstack.onrender.com";
 
-// Ensure No Trailing Slash
+// Ensure No Trailing Slash and Auto-fix protocol
 const API_BASE_URL = VITE_API_BASE_URL.replace(/\/$/, "");
+
+// Helper to get absolute URL if needed (useful for permanent fix)
+function getBaseUrl() {
+  if (window.location.protocol === "https:" && API_BASE_URL.startsWith("http://")) {
+    return API_BASE_URL.replace("http://", "https://");
+  }
+  return API_BASE_URL;
+}
+
+const FINAL_API_BASE_URL = getBaseUrl();
 
 function getStoredToken(): string | null {
   return localStorage.getItem("auth_token");
@@ -40,7 +50,7 @@ export async function apiRequest<T>(
 
   // Ensure path starts with /
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${API_BASE_URL}${normalizedPath}`;
+  const url = `${FINAL_API_BASE_URL}${normalizedPath}`;
 
   try {
     const response = await fetch(url, {

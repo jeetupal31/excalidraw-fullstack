@@ -28,7 +28,7 @@ interface UseRoomResult {
   isViewer: boolean;
 }
 
-const DEFAULT_WS_BASE_URL = "ws://localhost:3000";
+const DEFAULT_WS_BASE_URL = "wss://excalidraw-fullstack.onrender.com";
 
 export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const { user, token } = useAuth();
@@ -46,12 +46,9 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const socketUrl = useMemo(() => {
     let wsBaseUrl = import.meta.env.VITE_WS_BASE_URL ?? DEFAULT_WS_BASE_URL;
 
-    // Auto-fix protocol for production HTTPS
-    if (window.location.protocol === "https:" && wsBaseUrl.startsWith("ws://")) {
-      // Only swap if it's not localhost, or if we want to force wss for remote hosts
-      if (!wsBaseUrl.includes("localhost")) {
-        wsBaseUrl = wsBaseUrl.replace("ws://", "wss://");
-      }
+    // Auto-fix protocol for production (https -> wss)
+    if (window.location.protocol === "https:") {
+      wsBaseUrl = wsBaseUrl.replace("ws://", "wss://");
     }
 
     let url = `${wsBaseUrl}?room=${encodeURIComponent(roomId)}`;
