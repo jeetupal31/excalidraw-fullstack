@@ -48,7 +48,7 @@ export class DatabaseService {
       orderBy: { board: { updatedAt: "desc" } },
     });
 
-    return memberships.map((m) => ({
+    return memberships.map((m: any) => ({
       id: m.board.id,
       name: m.board.name,
       role: m.role,
@@ -129,8 +129,8 @@ export class DatabaseService {
     await this.prisma.boardVersion.create({
       data: {
         boardId,
-        elements: board.elements,
-        files: board.files,
+        elements: board.elements as Prisma.InputJsonValue,
+        files: board.files as Prisma.InputJsonValue,
       },
     });
   }
@@ -153,8 +153,8 @@ export class DatabaseService {
     await this.prisma.board.update({
       where: { id: boardId },
       data: {
-        elements: version.elements,
-        files: version.files,
+        elements: version.elements as Prisma.InputJsonValue,
+        files: version.files as Prisma.InputJsonValue,
       },
     });
   }
