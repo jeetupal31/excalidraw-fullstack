@@ -1,8 +1,0 @@
-.git
-.gitignore
-**/node_modules
-**/dist
-client/.env
-server/.env
-npm-debug.log*
-*.log
