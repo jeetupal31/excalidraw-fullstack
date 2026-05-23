@@ -1,100 +1,44 @@
-# ExcaliLive
+# Excalidraw Fullstack
 
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)
-![React](https://img.shields.io/badge/React-19.x-149ECA?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC?logo=tailwind-css&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
-![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000?style=flat-square&logo=nextdotjs)
+![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=flat-square&logo=socket.io&logoColor=white)
 
+> A full-stack collaborative whiteboard application — multiple users can draw together in real time on a shared canvas, powered by WebSockets.
 
-![ExcaliLive Landing Page](screenshots/landing-page.png)
-![ExcaliLive Board Page](screenshots/board-page.png)
+## Features
 
-ExcaliLive is a premium, production-grade realtime collaborative whiteboard platform. It combines the flexibility of Excalidraw with a high-end SaaS aesthetic, featuring glassmorphic UI, professional typography, and robust security.
+- 🎨 **Real-time collaborative drawing** — changes broadcast instantly to all connected users
+- 🖊️ **Rich drawing tools** — pen, shapes, arrows, text, eraser
+- 👥 **Multi-user rooms** — join a shared session via link
+- 💾 **Persistent canvas** — drawings are saved and restored on reconnect
+- ⚡ **Low-latency sync** — delta-based updates over WebSocket (no full-state spam)
 
-## ✨ Key Features
+## Tech Stack
 
-- **Realtime Collaboration**: Seamless low-latency scene synchronization via WebSockets.
-- **Premium SaaS UI**: A sophisticated design language featuring:
-  - **Glassmorphic Panels**: Translucent, blurred surfaces for a modern "frosted" look.
-  - **Inter Typography**: Enterprise-grade professional font for maximum legibility.
-  - **Lucide Iconography**: Consistent, high-fidelity SVG icons throughout.
-- **Robust Authentication**: Secure JWT-based user accounts and protected workspace routes.
-- **Artifact Ledger**: Comprehensive version history allowing users to save and restore snapshots of their boards.
-- **Live Presence**: Real-time cursor tracking and active user status indicators.
-- **Durable Persistence**: Board states are persisted in PostgreSQL using Prisma ORM.
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js, TypeScript, Canvas API |
+| Backend | Node.js, WebSocket (ws) |
+| Real-time | WebSocket rooms, delta sync |
+| Styling | Tailwind CSS |
 
-## 🛠 Tech Stack
+## Local Setup
 
-### Frontend
-- **Framework**: React 19 + Vite
-- **Styling**: Tailwind CSS + Custom Glassmorphism System
-- **Typography**: Inter (Google Fonts)
-- **Icons**: Lucide React
-- **Whiteboard**: Excalidraw Component
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express
-- **Communication**: Custom WebSocket Protocol (`ws`)
-- **Authentication**: JSON Web Tokens (JWT)
-
-### Database
-- **Primary**: PostgreSQL
-- **ORM**: Prisma
-
-## 🚀 Getting Started
-
-### 1. Requirements
-- Node.js 20+
-- PostgreSQL instance
-
-### 2. Installation
 ```bash
-# Clone the repository
-git clone <repo-url>
+git clone https://github.com/jeetupal31/excalidraw-fullstack.git
 cd excalidraw-fullstack
-
-# Install dependencies
 npm install
+
+# Start backend
+cd apps/server && npm run dev
+
+# Start frontend
+cd apps/web && npm run dev
 ```
 
-### 3. Configuration
-Copy environment variables to their respective directories:
-- `server/.env`
-- `client/.env` (Vite variables)
+Open http://localhost:3000, create a room, share the link with a friend.
 
-**Example `.env`:**
-```env
-PORT=3000
-DATABASE_URL="postgresql://user:pass@localhost:5432/excalilive"
-VITE_WS_BASE_URL="ws://localhost:3000"
-JWT_SECRET="your-secure-secret"
-```
+---
 
-### 4. Database Setup
-```bash
-# Generate Prisma client and run migrations
-npm run prisma:migrate --prefix server
-```
-
-### 5. Running the App
-Run both client and server in development mode:
-```bash
-npm run dev
-```
-- Workspace: `http://localhost:5173`
-- API Health: `http://localhost:3000/health`
-
-## 🏗 Architecture
-
-```mermaid
-graph TD
-    Client[React + Excalidraw] <-->|WebSocket / JSON| Server[Node.js + Express]
-    Server <-->|Prisma ORM| DB[(PostgreSQL)]
-    Client -->|HTTP / JWT| Server
-```
-
-## 📜 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Made by [Jeetu Pal](https://github.com/jeetupal31)
