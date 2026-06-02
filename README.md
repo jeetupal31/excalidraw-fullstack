@@ -33,6 +33,7 @@
 - 💾 **Persistent boards** — canvas state is stored in PostgreSQL and restored on reconnect
 - 🔑 **Auth** — JWT-based signup/login (bcrypt-hashed passwords); your boards are listed on your dashboard
 - 📤 **Export** — download the board as PNG or JSON
+- 🔄 **Resilient sync** — WebSocket auto-reconnects with exponential backoff; "Reconnecting…" / "Back online" status
 - 🌗 **Dark / light theme**
 
 ---
@@ -63,6 +64,8 @@
 - **Server-enforced roles** — viewers physically cannot mutate a board; the server drops their scene updates.
 - **Debounced persistence** — rapid edits broadcast instantly but are coalesced into at most one Postgres write per room per window, so drawing stays smooth and the DB isn't hammered.
 - **Throttled cursors** — cursor broadcasts are capped at ~25/sec to cut socket traffic without visible lag.
+- **Auto-reconnect** — dropped sockets (cold starts, network blips) reconnect automatically with exponential backoff; the UI shows "Reconnecting…" and a "Back online" confirmation instead of silently dying.
+- **Echo-loop prevention** — remote updates are applied behind a guard flag and Excalidraw scene-version diffing, so an incoming edit never re-broadcasts itself.
 - **Graceful shutdown** — `SIGINT`/`SIGTERM` flush pending state and close sockets cleanly.
 
 ---
@@ -199,6 +202,17 @@ Then open http://localhost:5173 and create a board.
 
 - **CI** (GitHub Actions) builds and type-checks the server (Prisma generate + `tsc`) and lints + builds the client on every push and PR.
 - **Client** auto-deploys to Vercel; **server** auto-deploys to Render from `main`.
+
+---
+
+## Scaling & Roadmap
+
+Honest limits of the current design and how I'd take it further:
+
+- **Horizontal scaling** — the `RoomManager` keeps room/presence state in memory, so it runs on a single instance. To scale out, add a **Redis pub/sub adapter** so all server instances share broadcasts, plus sticky sessions / shared presence.
+- **Conflict resolution** — sync is effectively last-write-wins on the whole scene. For heavy concurrent editing I'd move to a **CRDT (e.g. Yjs)** or operational transforms for conflict-free merges.
+- **Payload size** — the scene is sent as whole-document JSON; element-level deltas + compression would scale to very large boards.
+- **Cold starts** — the free Render tier sleeps; auto-reconnect hides most of it, and a keep-warm ping or paid tier removes it.
 
 ---
 
