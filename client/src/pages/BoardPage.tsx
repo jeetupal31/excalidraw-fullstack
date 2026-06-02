@@ -182,13 +182,14 @@ export function BoardPage() {
                         borderRadius: "50%",
                         backgroundColor:
                           connectionStatus === "open" ? "#34d399" :
-                          connectionStatus === "connecting" ? "#fbbf24" :
+                          connectionStatus === "connecting" || connectionStatus === "reconnecting" ? "#fbbf24" :
                           connectionStatus === "error" ? "#f87171" : "#94a3b8",
                       }}
                     />
                     <span style={{ fontSize: 13, color: "#334155" }}>
                       {connectionStatus === "open" ? "Connected" :
                        connectionStatus === "connecting" ? "Connecting..." :
+                       connectionStatus === "reconnecting" ? "Reconnecting..." :
                        connectionStatus === "error" ? "Error" : "Disconnected"}
                     </span>
                   </div>
