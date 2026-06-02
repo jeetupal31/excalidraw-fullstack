@@ -8,9 +8,12 @@ import { BoardToolbar } from "../components/BoardToolbar";
 import { CursorLayer } from "../components/CursorLayer";
 import { PresencePanel } from "../components/PresencePanel";
 import { VersionHistory } from "../components/VersionHistory";
+import { AiDiagramModal } from "../components/AiDiagramModal";
 import { useRoom } from "../hooks/useRoom";
 import { exportBoardAsJson, exportBoardAsPng } from "../services/exportService";
 import { isValidBoardId, normalizeBoardId } from "../services/board";
+import { buildDiagramElements } from "../services/aiDiagram";
+import type { DiagramGraph } from "../services/ai";
 
 const SIDEBAR_NAME = "board-info";
 
@@ -24,6 +27,7 @@ export function BoardPage() {
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   const {
     users,
@@ -83,6 +87,24 @@ export function BoardPage() {
 
 
 
+  const handleAiGenerated = useCallback(
+    (graph: DiagramGraph) => {
+      if (!excalidrawApi) {
+        return;
+      }
+      const generated = buildDiagramElements(graph);
+      if (generated.length === 0) {
+        return;
+      }
+      const existing = excalidrawApi.getSceneElements();
+      // updateScene fires Excalidraw's onChange -> handleSceneChange, which
+      // broadcasts the new elements to everyone in the room automatically.
+      excalidrawApi.updateScene({ elements: [...existing, ...generated] });
+      excalidrawApi.scrollToContent(generated, { fitToContent: true, animate: true });
+    },
+    [excalidrawApi]
+  );
+
   if (!isBoardIdValid) {
     return (
       <div className="flex h-full items-center justify-center px-4 sm:px-6">
@@ -110,7 +132,6 @@ export function BoardPage() {
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Excalidraw
         excalidrawAPI={registerBoardApi}
         isCollaborating
@@ -219,7 +240,15 @@ export function BoardPage() {
         onExportPng={handleExportPng}
         isViewer={isViewer}
         onToggleHistory={() => setShowHistory((prev) => !prev)}
+        onOpenAi={() => setShowAiModal(true)}
       />
+
+      {showAiModal && !isViewer && (
+        <AiDiagramModal
+          onClose={() => setShowAiModal(false)}
+          onGenerated={handleAiGenerated}
+        />
+      )}
 
       {showHistory && (
         <div className="absolute bottom-0 right-0 top-0 z-30 w-80 border-l border-slate-200 bg-white shadow-xl transition-transform">

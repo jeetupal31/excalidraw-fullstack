@@ -51,6 +51,12 @@ function isClientMessage(value: unknown): value is ClientMessage {
 export class WebSocketHandler {
   private socketRoles = new WeakMap<WebSocket, string>();
 
+  // Debounced persistence: rapid scene-updates are broadcast instantly but
+  // coalesced into at most one Postgres write per room per debounce window.
+  private static readonly SAVE_DEBOUNCE_MS = 600;
+  private pendingState = new Map<string, { elements: Prisma.InputJsonValue; files?: Prisma.InputJsonValue }>();
+  private saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
   constructor(
     private readonly roomManager: RoomManager,
     private readonly databaseService: DatabaseService,
@@ -80,6 +86,10 @@ export class WebSocketHandler {
         // Board may not exist yet — membership will be set when the board is first saved
       }
     }
+
+    // Flush any debounced state for this room first, so a joiner always loads
+    // the latest committed scene rather than a slightly stale snapshot.
+    await this.flushRoom(roomId);
 
     const boardState = await this.databaseService.loadBoardState(roomId);
     if (boardState) {
@@ -141,7 +151,7 @@ export class WebSocketHandler {
         this.handleJoin(socket, payload.clientId, user?.username ?? payload.username);
         break;
       case "scene-update":
-        await this.handleSceneUpdate(roomId, socket, payload, user, isViewer);
+        this.handleSceneUpdate(roomId, socket, payload, isViewer);
         break;
       case "cursor":
       case "cursor-remove":
@@ -164,39 +174,66 @@ export class WebSocketHandler {
     this.broadcastUsers(registration.roomId);
   }
 
-  private async handleSceneUpdate(
+  private handleSceneUpdate(
     roomId: string,
     socket: WebSocket,
     payload: SceneUpdateMessage,
-    user: AuthUser | null,
     isViewer: boolean
-  ): Promise<void> {
+  ): void {
     if (isViewer) {
-      // Secretly drop updates meant for viewers so they cannot modify the board
+      // Secretly drop updates from viewers so they cannot modify the board.
       return;
     }
 
-    // Scene updates are persisted first so reconnecting clients always get the latest committed state.
-    await this.databaseService.saveBoardState(
+    // Broadcast immediately (skipping the sender to avoid echo loops) so peers
+    // see edits in real time, then debounce the Postgres write. Membership is
+    // already ensured once on connect, so we no longer hit the DB per update.
+    this.broadcastToRoom(roomId, payload, socket);
+    this.scheduleSave(
       roomId,
       payload.elements as Prisma.InputJsonValue,
       payload.files as Prisma.InputJsonValue | undefined
     );
+  }
 
-    // If authenticated and board membership doesn't exist yet, create it now
-    if (user) {
-      try {
-        const existingRole = await this.databaseService.getBoardRole(roomId, user.id);
-        if (!existingRole) {
-          await this.databaseService.addBoardMember(roomId, user.id, "owner");
-        }
-      } catch {
-        // Non-critical error — membership creation can be retried
-      }
+  /** Stores the latest scene for a room and (re)arms the debounced save. */
+  private scheduleSave(
+    roomId: string,
+    elements: Prisma.InputJsonValue,
+    files?: Prisma.InputJsonValue
+  ): void {
+    this.pendingState.set(roomId, { elements, files });
+
+    const existing = this.saveTimers.get(roomId);
+    if (existing) {
+      clearTimeout(existing);
     }
 
-    // We skip the sender to prevent echo loops while still syncing all peers in the room.
-    this.broadcastToRoom(roomId, payload, socket);
+    const timer = setTimeout(() => {
+      void this.flushRoom(roomId);
+    }, WebSocketHandler.SAVE_DEBOUNCE_MS);
+    this.saveTimers.set(roomId, timer);
+  }
+
+  /** Persists any pending scene for a room immediately (idempotent). */
+  private async flushRoom(roomId: string): Promise<void> {
+    const timer = this.saveTimers.get(roomId);
+    if (timer) {
+      clearTimeout(timer);
+      this.saveTimers.delete(roomId);
+    }
+
+    const pending = this.pendingState.get(roomId);
+    if (!pending) {
+      return;
+    }
+    this.pendingState.delete(roomId);
+
+    try {
+      await this.databaseService.saveBoardState(roomId, pending.elements, pending.files);
+    } catch (error) {
+      console.error(`Failed to persist board state for room ${roomId}:`, error);
+    }
   }
 
   private handleClose(socket: WebSocket): void {
@@ -206,6 +243,9 @@ export class WebSocketHandler {
     }
 
     const { roomId, clientId } = removed;
+
+    // Persist any pending edits now so nothing is lost when users leave.
+    void this.flushRoom(roomId);
 
     if (clientId) {
       const removePayload: CursorRemoveMessage = {

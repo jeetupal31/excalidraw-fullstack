@@ -8,6 +8,7 @@ import { WebSocketServer } from "ws";
 import { healthController } from "./controllers/healthController";
 import { createAuthController } from "./controllers/authController";
 import { createBoardController } from "./controllers/boardController";
+import { createAiController } from "./controllers/aiController";
 import { RoomManager } from "./rooms/RoomManager";
 import { DatabaseService } from "./services/DatabaseService";
 import { AuthService } from "./services/authService";
@@ -80,6 +81,40 @@ app.delete("/api/boards/:id", requireAuth, boardController.deleteBoard);
 app.get("/api/boards/:id/versions", requireAuth, boardController.getVersions);
 app.post("/api/boards/:id/versions", requireAuth, boardController.saveVersion);
 app.post("/api/boards/:id/restore", requireAuth, boardController.restoreVersion);
+
+// AI routes — protected by a lightweight in-memory rate limiter so the shared
+// Groq quota can't be drained by abuse. Guests can use it (no auth required).
+const aiBuckets = new Map<string, { count: number; windowStart: number }>();
+const AI_WINDOW_MS = 5 * 60 * 1000;
+const AI_MAX_REQUESTS = 20;
+const aiRateLimit = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
+  const now = Date.now();
+  const bucket = aiBuckets.get(ip);
+  if (!bucket || now - bucket.windowStart > AI_WINDOW_MS) {
+    aiBuckets.set(ip, { count: 1, windowStart: now });
+    next();
+    return;
+  }
+  bucket.count += 1;
+  if (bucket.count > AI_MAX_REQUESTS) {
+    res.status(429).json({ error: "Too many AI requests. Please wait a few minutes." });
+    return;
+  }
+  next();
+};
+const aiSweepTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, bucket] of aiBuckets) {
+    if (now - bucket.windowStart > AI_WINDOW_MS) {
+      aiBuckets.delete(ip);
+    }
+  }
+}, AI_WINDOW_MS);
+aiSweepTimer.unref?.();
+
+const aiController = createAiController();
+app.post("/api/ai/generate", aiRateLimit, aiController.generate);
 
 wss.on("connection", (socket, request) => {
   void webSocketHandler.handleConnection(socket, request);
