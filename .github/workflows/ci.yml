@@ -10,18 +10,18 @@ jobs:
   server:
     name: Server - build & typecheck
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-      - run: npm ci
-      - name: Build (prisma generate + tsc)
+      # Install at the repo root: the root postinstall also installs server +
+      # client deps, and Prisma resolves @prisma/client from the schema's
+      # location (repo root), so a root install is required for prisma generate.
+      - name: Install dependencies
+        run: npm install
+      - name: Build server (prisma generate + tsc)
+        working-directory: server
         run: npm run build
 
   client:
