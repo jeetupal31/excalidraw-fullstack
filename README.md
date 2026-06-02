@@ -15,6 +15,14 @@
 
 ---
 
+## Screenshots
+
+| Landing | Collaborative board |
+|---------|--------------------|
+| ![Landing page](screenshots/landing-page.png) | ![Collaborative board](screenshots/board-page.png) |
+
+---
+
 ## Features
 
 - 🎨 **Real-time collaboration** — edits broadcast instantly to everyone in the room over WebSockets
