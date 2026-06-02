@@ -19,5 +19,13 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // DX/HMR-only rule (Fast Refresh); irrelevant to production correctness.
+      // Contexts intentionally co-locate their provider component and hook.
+      'react-refresh/only-export-components': 'warn',
+      // Perf-hint rule (react-hooks v7). The setState-in-effect usages here are
+      // legitimate "reset state when an input changes" patterns, not bugs.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { 
-  Link as LinkIcon, 
-  Eye, 
-  Download, 
-  FileJson, 
-  History, 
-  Check, 
+import {
+  Link as LinkIcon,
+  Eye,
+  Download,
+  FileJson,
+  History,
+  Check,
   Activity,
   AlertTriangle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Sparkles
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ConnectionStatus } from "../hooks/useWebSocket";
 
 interface BoardToolbarProps {
@@ -22,6 +24,7 @@ interface BoardToolbarProps {
   onExportJson: () => void;
   isViewer: boolean;
   onToggleHistory: () => void;
+  onOpenAi: () => void;
 }
 
 const statusClasses: Record<ConnectionStatus, string> = {
@@ -31,7 +34,7 @@ const statusClasses: Record<ConnectionStatus, string> = {
   error: "bg-rose-50 text-rose-700 border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30",
 };
 
-const statusIcon: Record<ConnectionStatus, any> = {
+const statusIcon: Record<ConnectionStatus, LucideIcon> = {
   connecting: Activity,
   open: Wifi,
   closed: WifiOff,
@@ -47,6 +50,7 @@ export function BoardToolbar({
   onExportJson,
   isViewer,
   onToggleHistory,
+  onOpenAi,
 }: BoardToolbarProps) {
   const [copiedType, setCopiedType] = useState<"editor" | "viewer" | null>(null);
 
@@ -141,6 +145,21 @@ export function BoardToolbar({
             <span className="hidden sm:inline-block">JSON</span>
           </button>
         </div>
+
+        {!isViewer && (
+          <>
+            <div className="h-5 w-px bg-slate-200 dark:bg-zinc-800" />
+            <button
+              className="glass-button flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-[11px] font-bold text-indigo-600 transition-colors hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 sm:text-xs"
+              onClick={onOpenAi}
+              type="button"
+              title="Generate a diagram with AI"
+            >
+              <Sparkles size={15} />
+              <span className="hidden sm:inline-block">AI</span>
+            </button>
+          </>
+        )}
 
         <div className="h-5 w-px bg-slate-200 dark:bg-zinc-800" />
 

@@ -1,0 +1,59 @@
+# One-command local stack: Postgres + collaboration server + client dev server.
+#
+#   JWT_SECRET=dev GROQ_API_KEY=your_key docker compose up --build
+#
+#   Client : http://localhost:5173
+#   Server : http://localhost:3000  (REST + WebSocket)
+#   Postgres: localhost:5432
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: excalidraw
+      POSTGRES_PASSWORD: excalidraw
+      POSTGRES_DB: excalidraw
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U excalidraw"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://excalidraw:excalidraw@db:5432/excalidraw
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      CORS_ORIGINS: http://localhost:5173
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Push the schema to the fresh database, then start the server.
+    command: sh -c "npx prisma db push --schema ../prisma/schema.prisma --skip-generate && node dist/index.js"
+
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000
+      VITE_WS_BASE_URL: ws://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host --port 5173"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:

@@ -42,6 +42,8 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
   const isApplyingRemoteUpdateRef = useRef(false);
   const lastRemoteSceneVersionRef = useRef<number | null>(null);
   const lastSentSceneVersionRef = useRef(0);
+  // Throttle cursor broadcasts to ~25/sec; pointermove fires far more often.
+  const lastCursorSentRef = useRef(0);
 
   const socketUrl = useMemo(() => {
     let wsBaseUrl = import.meta.env.VITE_WS_BASE_URL ?? DEFAULT_WS_BASE_URL;
@@ -214,6 +216,14 @@ export function useRoom(roomId: string, enabled = true): UseRoomResult {
 
   const handlePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
+      // Throttle: pointermove can fire 100+ times/sec. Sending at most every
+      // ~40ms keeps cursors smooth while cutting websocket traffic ~3-4x.
+      const now = Date.now();
+      if (now - lastCursorSentRef.current < 40) {
+        return;
+      }
+      lastCursorSentRef.current = now;
+
       sendJsonMessage({
         type: "cursor",
         clientId: identityRef.current.clientId,
