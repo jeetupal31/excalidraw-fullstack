@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Wifi,
   WifiOff,
+  RefreshCw,
   Sparkles
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -29,6 +30,7 @@ interface BoardToolbarProps {
 
 const statusClasses: Record<ConnectionStatus, string> = {
   connecting: "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-900/30",
+  reconnecting: "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-900/30",
   open: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/10 dark:text-emerald-400 dark:border-emerald-900/30",
   closed: "bg-slate-50 text-slate-600 border-slate-100 dark:bg-zinc-900/30 dark:text-zinc-500 dark:border-zinc-800",
   error: "bg-rose-50 text-rose-700 border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30",
@@ -36,6 +38,7 @@ const statusClasses: Record<ConnectionStatus, string> = {
 
 const statusIcon: Record<ConnectionStatus, LucideIcon> = {
   connecting: Activity,
+  reconnecting: RefreshCw,
   open: Wifi,
   closed: WifiOff,
   error: AlertTriangle,
@@ -116,7 +119,7 @@ export function BoardToolbar({
           className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-colors ${statusClasses[connectionStatus]}`}
           title={`Status: ${connectionStatus}`}
         >
-          <StatusIcon size={14} strokeWidth={connectionStatus === 'open' ? 3 : 2} className={connectionStatus === 'open' ? 'animate-pulse' : ''} />
+          <StatusIcon size={14} strokeWidth={connectionStatus === 'open' ? 3 : 2} className={connectionStatus === 'open' ? 'animate-pulse' : connectionStatus === 'reconnecting' ? 'animate-spin' : ''} />
           <span className="hidden sm:inline-block uppercase tracking-wider">{connectionStatus}</span>
         </div>
 

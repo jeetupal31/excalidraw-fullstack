@@ -81,3 +81,34 @@
   min-height: 100vh;
   width: 100%;
 }
+
+/* --- App-wide polish --- */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Accessible keyboard focus ring (only shows on keyboard navigation). */
+:focus-visible {
+  outline: 2px solid rgb(99 102 241 / 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Refined, unobtrusive scrollbar. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.4);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 0.6);
+  background-clip: content-box;
+}

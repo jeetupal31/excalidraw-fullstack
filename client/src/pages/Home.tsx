@@ -239,6 +239,9 @@ export function Home() {
             ) : myBoards.length === 0 ? (
               <div className="mt-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-12 text-center dark:border-zinc-800 dark:bg-zinc-900/30">
                 <p className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">No active boards found</p>
+                <p className="mx-auto mt-2 max-w-xs text-sm text-slate-500 dark:text-zinc-400">
+                  Create a board and share the link to start sketching together in real time.
+                </p>
                 <button
                   className="mt-6 rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold tracking-widest text-slate-900 uppercase transition hover:border-slate-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:border-zinc-700"
                   onClick={handleCreateBoard}

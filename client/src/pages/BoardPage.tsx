@@ -1,7 +1,7 @@
 import { Excalidraw, Sidebar } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { BoardToolbar } from "../components/BoardToolbar";
@@ -28,6 +28,7 @@ export function BoardPage() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [showBackOnline, setShowBackOnline] = useState(false);
 
   const {
     users,
@@ -48,6 +49,18 @@ export function BoardPage() {
     },
     [registerExcalidrawApi]
   );
+
+  // Briefly show a "Back online" confirmation when a dropped socket recovers.
+  const prevStatusRef = useRef(connectionStatus);
+  useEffect(() => {
+    if (prevStatusRef.current === "reconnecting" && connectionStatus === "open") {
+      setShowBackOnline(true);
+      const timer = setTimeout(() => setShowBackOnline(false), 2500);
+      prevStatusRef.current = connectionStatus;
+      return () => clearTimeout(timer);
+    }
+    prevStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
 
   const handleExportPng = useCallback(async () => {
     if (!excalidrawApi) {
@@ -266,13 +279,23 @@ export function BoardPage() {
 
 
 
-      {connectionStatus === "connecting" ? (
-        <div className="pointer-events-none absolute bottom-12 left-2 z-20 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:left-4">
-          Establishing realtime connection...
+      {connectionStatus === "connecting" || connectionStatus === "reconnecting" ? (
+        <div className="pointer-events-none absolute bottom-12 left-2 z-20 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:left-4">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+          {connectionStatus === "reconnecting"
+            ? "Reconnecting to collaboration server..."
+            : "Establishing realtime connection..."}
         </div>
       ) : null}
 
-      {connectionError ? (
+      {showBackOnline ? (
+        <div className="pointer-events-none absolute bottom-12 left-2 z-20 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 sm:left-4">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Back online
+        </div>
+      ) : null}
+
+      {connectionError && connectionStatus !== "reconnecting" && connectionStatus !== "connecting" ? (
         <div className="pointer-events-none absolute bottom-12 left-2 z-20 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800 sm:left-4">
           {connectionError}
         </div>

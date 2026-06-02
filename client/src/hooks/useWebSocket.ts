@@ -10,7 +10,10 @@ interface UseWebSocketOptions<TMessage> {
   onClose?: () => void;
 }
 
-export type ConnectionStatus = "connecting" | "open" | "closed" | "error";
+export type ConnectionStatus = "connecting" | "open" | "closed" | "error" | "reconnecting";
+
+const INITIAL_RECONNECT_DELAY_MS = 1000;
+const MAX_RECONNECT_DELAY_MS = 15000;
 
 export function useWebSocket<TMessage>({
   url,
@@ -31,6 +34,10 @@ export function useWebSocket<TMessage>({
     onClose,
   });
 
+  // Reconnection bookkeeping (kept in refs so it survives re-renders).
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     handlersRef.current = {
       parseMessage,
@@ -48,47 +55,82 @@ export function useWebSocket<TMessage>({
       return;
     }
 
-    setConnectionStatus("connecting");
-    setConnectionError(null);
+    // `active` flips to false on cleanup (unmount / url change / disable) so a
+    // late close event from an old socket can't trigger a reconnect.
+    let active = true;
 
-    const socket = new WebSocket(url);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setConnectionStatus("open");
-      setConnectionError(null);
-      handlersRef.current.onOpen?.(socket);
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
     };
 
-    socket.onmessage = (event) => {
-      if (typeof event.data !== "string") {
+    const connect = () => {
+      if (!active) {
         return;
       }
 
-      const parsed = handlersRef.current.parseMessage(event.data);
-      if (parsed) {
-        handlersRef.current.onMessage?.(parsed);
-      }
-    };
+      // First attempt shows "connecting"; subsequent ones show "reconnecting".
+      setConnectionStatus(reconnectAttemptsRef.current === 0 ? "connecting" : "reconnecting");
+      setConnectionError(null);
 
-    socket.onerror = () => {
-      setConnectionStatus("error");
-      setConnectionError("Connection to collaboration server failed.");
-    };
+      const socket = new WebSocket(url);
+      socketRef.current = socket;
 
-    socket.onclose = () => {
-      setConnectionStatus((previousStatus) => {
-        if (previousStatus === "error") {
-          return "error";
+      socket.onopen = () => {
+        if (!active) {
+          return;
         }
+        reconnectAttemptsRef.current = 0;
+        setConnectionStatus("open");
+        setConnectionError(null);
+        handlersRef.current.onOpen?.(socket);
+      };
 
-        return "closed";
-      });
-      handlersRef.current.onClose?.();
+      socket.onmessage = (event) => {
+        if (typeof event.data !== "string") {
+          return;
+        }
+        const parsed = handlersRef.current.parseMessage(event.data);
+        if (parsed) {
+          handlersRef.current.onMessage?.(parsed);
+        }
+      };
+
+      socket.onerror = () => {
+        if (!active) {
+          return;
+        }
+        setConnectionError("Connection to collaboration server failed.");
+      };
+
+      socket.onclose = () => {
+        if (!active) {
+          return;
+        }
+        handlersRef.current.onClose?.();
+
+        // Unexpected drop — retry with exponential backoff (capped).
+        const attempt = reconnectAttemptsRef.current + 1;
+        reconnectAttemptsRef.current = attempt;
+        const delay = Math.min(
+          INITIAL_RECONNECT_DELAY_MS * 2 ** (attempt - 1),
+          MAX_RECONNECT_DELAY_MS
+        );
+        setConnectionStatus("reconnecting");
+        clearReconnectTimer();
+        reconnectTimerRef.current = setTimeout(connect, delay);
+      };
     };
+
+    connect();
 
     return () => {
-      socket.close();
+      active = false;
+      clearReconnectTimer();
+      reconnectAttemptsRef.current = 0;
+      socketRef.current?.close();
       socketRef.current = null;
     };
   }, [enabled, url]);
